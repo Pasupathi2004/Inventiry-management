@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1,
+    "name": "sc",
+    "make": "sF",
+    "model": "afs",
+    "specification": "asf",
+    "rack": "af",
+    "bin": "asf",
+    "quantity": 1,
+    "createdAt": "2025-06-20T04:56:53.657Z",
+    "updatedAt": "2025-06-24T05:15:16.154Z",
+    "updatedBy": "pasu"
+  },
+  {
+    "id": 2,
+    "name": "davd",
+    "make": "sdgh",
+    "model": "dfh",
+    "specification": "fgz",
+    "rack": "dfh",
+    "bin": "dfh",
+    "quantity": 4159,
+    "createdAt": "2025-06-24T04:11:31.389Z",
+    "updatedAt": "2025-06-24T05:03:32.226Z",
+    "updatedBy": "pasu"
+  }
+]
