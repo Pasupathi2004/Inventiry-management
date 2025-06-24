@@ -29,7 +29,7 @@ const AddItem: React.FC = () => {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/inventory', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/inventory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
