@@ -26,7 +26,7 @@ const SparesList: React.FC = () => {
 
   const fetchInventory = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/inventory', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/inventory`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ const SparesList: React.FC = () => {
     if (!editingItem) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/inventory/${editingItem.id}`, {
+      const response = await  fetch(`${import.meta.env.VITE_API_URL}/api/inventory/${editingItem.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ const SparesList: React.FC = () => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/inventory/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/inventory/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
