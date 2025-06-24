@@ -25,7 +25,7 @@ const SearchPage: React.FC = () => {
 
   const fetchInventory = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/inventory', {
+      const response = await  fetch(`${import.meta.env.VITE_API_URL}/api/inventory`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ const SearchPage: React.FC = () => {
     setUpdatingItems(prev => new Set(prev).add(itemId));
     
     try {
-      const response = await fetch(`http://localhost:3001/api/inventory/${itemId}`, {
+      const response = await  fetch(`${import.meta.env.VITE_API_URL}/api/inventory/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
