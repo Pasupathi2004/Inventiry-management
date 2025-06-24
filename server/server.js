@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
   origin: [
+    'http://localhost:5173'
     'https://inventiry-management.vercel.app/',
     process.env.CORS_ORIGIN
   ].filter(Boolean),
