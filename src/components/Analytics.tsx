@@ -23,7 +23,7 @@ const Analytics: React.FC = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/analytics', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/analytics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
