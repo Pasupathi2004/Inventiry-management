@@ -5,19 +5,5 @@
     "password": "123",
     "role": "admin",
     "createdAt": "2025-06-24T04:08:03.717Z"
-  },
-  {
-    "id": 2,
-    "username": "kamal",
-    "password": "123",
-    "role": "user",
-    "createdAt": "2025-06-24T04:20:04.856Z"
-  },
-  {
-    "id": 3,
-    "username": "lekha",
-    "password": "123",
-    "role": "admin",
-    "createdAt": "2025-06-24T04:20:24.264Z"
   }
 ]
