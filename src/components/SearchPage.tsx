@@ -13,6 +13,7 @@ const SearchPage: React.FC = () => {
   const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const recognition = useRef<any>(null);
+  const [quantityInputs, setQuantityInputs] = useState<{ [key: number]: string }>({});
 
   useEffect(() => {
     fetchInventory();
@@ -152,12 +153,32 @@ const SearchPage: React.FC = () => {
   };
 
   const handleIncreaseQuantity = (item: InventoryItem) => {
-    handleQuantityUpdate(item.id, item.quantity + 1);
+    if (window.confirm(`Are you sure you want to increase the quantity of '${item.name}' by 1?`)) {
+      handleQuantityUpdate(item.id, item.quantity + 1);
+    }
   };
 
   const handleDecreaseQuantity = (item: InventoryItem) => {
     if (item.quantity > 0) {
-      handleQuantityUpdate(item.id, item.quantity - 1);
+      if (window.confirm(`Are you sure you want to decrease the quantity of '${item.name}' by 1?`)) {
+        handleQuantityUpdate(item.id, item.quantity - 1);
+      }
+    }
+  };
+
+  const handleQuantityInputChange = (itemId: number, value: string) => {
+    setQuantityInputs((prev) => ({ ...prev, [itemId]: value }));
+  };
+
+  const handleCustomQuantityUpdate = (item: InventoryItem) => {
+    const inputValue = quantityInputs[item.id];
+    const newQuantity = parseInt(inputValue, 10);
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      alert('Please enter a valid non-negative number.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to update the quantity of '${item.name}' to ${newQuantity}?`)) {
+      handleQuantityUpdate(item.id, newQuantity);
     }
   };
 
@@ -301,6 +322,23 @@ const SearchPage: React.FC = () => {
                             title="Increase quantity"
                           >
                             <Plus size={16} />
+                          </button>
+                        </div>
+                        <div className="flex flex-col items-end space-y-2 mt-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={quantityInputs[item.id] !== undefined ? quantityInputs[item.id] : item.quantity}
+                            onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                            className="w-20 px-2 py-1 border border-gray-300 rounded text-right"
+                            disabled={updatingItems.has(item.id)}
+                          />
+                          <button
+                            onClick={() => handleCustomQuantityUpdate(item)}
+                            disabled={updatingItems.has(item.id)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                          >
+                            Update
                           </button>
                         </div>
                         <div className="text-sm text-gray-600">in stock</div>
