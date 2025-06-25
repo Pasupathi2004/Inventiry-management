@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,6 +18,7 @@ const AddItem: React.FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [bulkUploadStatus, setBulkUploadStatus] = useState<string | null>(null);
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [refreshInventory, setRefreshInventory] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -67,6 +68,13 @@ const AddItem: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (refreshInventory) {
+      // Optionally, you can trigger a fetch or event to update the spares list
+      setRefreshInventory(false);
+    }
+  }, [refreshInventory]);
 
   return (
     <div className="space-y-6">
@@ -286,6 +294,7 @@ const AddItem: React.FC = () => {
               const data = await response.json();
               if (data.success) {
                 setBulkUploadStatus('Bulk upload successful!');
+                setRefreshInventory(true);
               } else {
                 setBulkUploadStatus(data.message || 'Bulk upload failed.');
               }
