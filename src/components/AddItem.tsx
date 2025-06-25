@@ -11,10 +11,13 @@ const AddItem: React.FC = () => {
     specification: '',
     rack: '',
     bin: '',
-    quantity: ''
+    quantity: '',
+    minimumQuantity: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [bulkUploadStatus, setBulkUploadStatus] = useState<string | null>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -52,7 +55,8 @@ const AddItem: React.FC = () => {
           specification: '',
           rack: '',
           bin: '',
-          quantity: ''
+          quantity: '',
+          minimumQuantity: ''
         });
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to add item. Please try again.' });
@@ -176,6 +180,23 @@ const AddItem: React.FC = () => {
                 placeholder="Enter bin location"
               />
             </div>
+
+            <div>
+              <label htmlFor="minimumQuantity" className="block text-sm font-medium text-gray-700 mb-2">
+                Minimum Quantity *
+              </label>
+              <input
+                type="number"
+                id="minimumQuantity"
+                name="minimumQuantity"
+                value={formData.minimumQuantity}
+                onChange={handleChange}
+                required
+                min="0"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent outline-none"
+                placeholder="Enter minimum quantity"
+              />
+            </div>
           </div>
 
           <div className="mt-6">
@@ -214,7 +235,8 @@ const AddItem: React.FC = () => {
                 specification: '',
                 rack: '',
                 bin: '',
-                quantity: ''
+                quantity: '',
+                minimumQuantity: ''
               })}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -236,6 +258,71 @@ const AddItem: React.FC = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Bulk Upload Section */}
+      <div className="mt-10 bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Bulk Upload Items</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('bulk-upload-file') as HTMLInputElement;
+            if (!fileInput.files || fileInput.files.length === 0) {
+              setBulkUploadStatus('Please select a file to upload.');
+              return;
+            }
+            setBulkUploading(true);
+            setBulkUploadStatus(null);
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/inventory/bulk-upload`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                },
+                body: formData
+              });
+              const data = await response.json();
+              if (data.success) {
+                setBulkUploadStatus('Bulk upload successful!');
+              } else {
+                setBulkUploadStatus(data.message || 'Bulk upload failed.');
+              }
+            } catch (error) {
+              setBulkUploadStatus('Network error during bulk upload.');
+            } finally {
+              setBulkUploading(false);
+            }
+          }}
+          className="flex flex-col md:flex-row items-center gap-4"
+          encType="multipart/form-data"
+        >
+          <input
+            type="file"
+            id="bulk-upload-file"
+            accept=".xlsx,.xls,.csv"
+            className="border border-gray-300 rounded-lg px-3 py-2"
+            required
+          />
+          <button
+            type="submit"
+            disabled={bulkUploading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {bulkUploading ? 'Uploading...' : 'Upload Excel File'}
+          </button>
+          <a
+            href="/example-bulk-upload-template.xlsx"
+            download
+            className="ml-4 text-blue-600 underline text-sm"
+          >
+            Download Example Template
+          </a>
+        </form>
+        {bulkUploadStatus && (
+          <div className="mt-4 text-sm text-gray-700">{bulkUploadStatus}</div>
+        )}
       </div>
     </div>
   );

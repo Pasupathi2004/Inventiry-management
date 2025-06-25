@@ -153,16 +153,12 @@ const SearchPage: React.FC = () => {
   };
 
   const handleIncreaseQuantity = (item: InventoryItem) => {
-    if (window.confirm(`Are you sure you want to increase the quantity of '${item.name}' by 1?`)) {
-      handleQuantityUpdate(item.id, item.quantity + 1);
-    }
+    handleQuantityUpdate(item.id, item.quantity + 1);
   };
 
   const handleDecreaseQuantity = (item: InventoryItem) => {
     if (item.quantity > 0) {
-      if (window.confirm(`Are you sure you want to decrease the quantity of '${item.name}' by 1?`)) {
-        handleQuantityUpdate(item.id, item.quantity - 1);
-      }
+      handleQuantityUpdate(item.id, item.quantity - 1);
     }
   };
 
