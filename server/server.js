@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { initializeDatabase } from './config/database.js';
+import { connectDB } from './config/mongodb.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Import routes
@@ -59,7 +59,8 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    database: 'MongoDB'
   });
 });
 
@@ -106,9 +107,9 @@ app.use(errorHandler);
 // Initialize database and start server
 const startServer = async () => {
   try {
-    // Initialize database
-    initializeDatabase();
-    console.log('Database initialized successfully');
+    // Connect to MongoDB
+    await connectDB();
+    console.log('🗄️ MongoDB connected successfully');
 
     // Start server
     server.listen(PORT, () => {
@@ -117,6 +118,7 @@ const startServer = async () => {
       console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Set' : 'Not Set'}`);
       console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN}`);
       console.log(`🔌 Socket.IO enabled`);
+      console.log(`🗄️ Database: MongoDB`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
