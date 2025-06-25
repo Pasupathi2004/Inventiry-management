@@ -176,6 +176,16 @@ const SearchPage: React.FC = () => {
     handleQuantityUpdate(item.id, newQuantity);
   };
 
+  const handleTakeQuantity = (item: InventoryItem) => {
+    const inputValue = quantityInputs[item.id];
+    const takeQty = parseInt(inputValue, 10);
+    if (isNaN(takeQty) || takeQty < 1 || takeQty > item.quantity) {
+      alert('Please enter a valid quantity to take.');
+      return;
+    }
+    handleQuantityUpdate(item.id, item.quantity - takeQty);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -293,15 +303,7 @@ const SearchPage: React.FC = () => {
                       </div>
                       
                       <div className="text-right">
-                        <div className="flex items-center justify-end space-x-2 mb-2">
-                          <button
-                            onClick={() => handleDecreaseQuantity(item)}
-                            disabled={updatingItems.has(item.id) || item.quantity <= 0}
-                            className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Decrease quantity"
-                          >
-                            <Minus size={16} />
-                          </button>
+                        <div className="mb-2">
                           <div className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">
                             {updatingItems.has(item.id) ? (
                               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2E8B57] mx-auto"></div>
@@ -309,27 +311,21 @@ const SearchPage: React.FC = () => {
                               item.quantity
                             )}
                           </div>
-                          <button
-                            onClick={() => handleIncreaseQuantity(item)}
-                            disabled={updatingItems.has(item.id)}
-                            className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Increase quantity"
-                          >
-                            <Plus size={16} />
-                          </button>
                         </div>
                         <div className="flex flex-col items-end space-y-2 mt-2">
                           <input
                             type="number"
-                            min="0"
-                            value={quantityInputs[item.id] !== undefined ? quantityInputs[item.id] : item.quantity}
+                            min="1"
+                            max={item.quantity}
+                            value={quantityInputs[item.id] !== undefined ? quantityInputs[item.id] : ''}
                             onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-right"
+                            className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
                             disabled={updatingItems.has(item.id)}
+                            placeholder="Qty to take"
                           />
                           <button
-                            onClick={() => handleCustomQuantityUpdate(item)}
-                            disabled={updatingItems.has(item.id)}
+                            onClick={() => handleTakeQuantity(item)}
+                            disabled={updatingItems.has(item.id) || !quantityInputs[item.id] || isNaN(Number(quantityInputs[item.id])) || Number(quantityInputs[item.id]) < 1 || Number(quantityInputs[item.id]) > item.quantity}
                             className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                           >
                             Update

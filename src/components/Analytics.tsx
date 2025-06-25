@@ -16,9 +16,14 @@ const Analytics: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [storageMB, setStorageMB] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
+    fetchUserCount();
+    fetchStorageMB();
   }, []);
 
   const fetchAnalytics = async () => {
@@ -37,6 +42,36 @@ const Analytics: React.FC = () => {
       console.error('Error fetching analytics:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchUserCount = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/count`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (data.success) setUserCount(data.count);
+    } catch (error) {
+      setUserCount(null);
+    }
+  };
+
+  const fetchStorageMB = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/settings/storage`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (data.success) setStorageMB(data.storageMB);
+    } catch (error) {
+      setStorageMB(null);
     }
   };
 
@@ -272,6 +307,12 @@ const Analytics: React.FC = () => {
             Delete History
           </button>
           <button
+            onClick={() => setShowSettings(s => !s)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Settings
+          </button>
+          <button
             onClick={generateExcelReport}
             className="flex items-center space-x-2 px-4 py-2 bg-[#2E8B57] text-white rounded-lg hover:bg-[#236B45] transition-colors"
           >
@@ -281,27 +322,12 @@ const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Month/Year Selectors and Monthly Report Download */}
-      <div className="flex items-center space-x-4 mt-2">
-        <label className="text-sm font-medium">Month:</label>
-        <select value={selectedMonth} onChange={handleMonthChange} className="border rounded px-2 py-1">
-          {Array.from({length:12},(_,i)=>i).map(m => (
-            <option key={m} value={m}>{format(new Date(2000, m, 1), 'MMMM')}</option>
-          ))}
-        </select>
-        <label className="text-sm font-medium">Year:</label>
-        <select value={selectedYear} onChange={handleYearChange} className="border rounded px-2 py-1">
-          {Array.from({length:5},(_,i)=>new Date().getFullYear()-i).map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-        <button
-          onClick={generateMonthlyExcelReport}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Download Monthly Report
-        </button>
-      </div>
+      {showSettings && (
+        <div className="bg-white rounded-lg shadow-md p-6 mt-4">
+          <h2 className="text-xl font-semibold mb-4">Settings</h2>
+          <div>Storage Used: {storageMB !== null ? `${storageMB} MB` : '...'}</div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

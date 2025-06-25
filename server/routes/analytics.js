@@ -1,7 +1,9 @@
 import express from 'express';
 import { readJSON, DB_PATHS } from '../config/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -40,5 +42,22 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
     analytics
   });
 }));
+
+// Get storage usage in MB (admin only)
+router.get('/settings/storage', authenticateToken, requireRole(['admin']), (req, res) => {
+  const dataDir = path.join(process.cwd(), 'server', 'data');
+  let totalBytes = 0;
+  try {
+    const files = fs.readdirSync(dataDir);
+    for (const file of files) {
+      const stats = fs.statSync(path.join(dataDir, file));
+      if (stats.isFile()) totalBytes += stats.size;
+    }
+    const storageMB = Math.round((totalBytes / (1024 * 1024)) * 100) / 100;
+    res.json({ success: true, storageMB });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to calculate storage' });
+  }
+});
 
 export default router;
