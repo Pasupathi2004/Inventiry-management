@@ -17,7 +17,8 @@ const SparesList: React.FC = () => {
     specification: '',
     rack: '',
     bin: '',
-    quantity: ''
+    quantity: '',
+    minimumQuantity: ''
   });
 
   useEffect(() => {
@@ -52,7 +53,8 @@ const SparesList: React.FC = () => {
       specification: item.specification,
       rack: item.rack,
       bin: item.bin,
-      quantity: item.quantity.toString()
+      quantity: item.quantity.toString(),
+      minimumQuantity: item.minimumQuantity !== undefined ? item.minimumQuantity.toString() : ''
     });
     setShowEditModal(true);
   };
@@ -352,6 +354,18 @@ const SparesList: React.FC = () => {
                     type="number"
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent"
+                    required
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Quantity</label>
+                  <input
+                    type="number"
+                    value={formData.minimumQuantity}
+                    onChange={(e) => setFormData({ ...formData, minimumQuantity: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent"
                     required
                     min="0"

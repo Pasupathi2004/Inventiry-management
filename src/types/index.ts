@@ -15,6 +15,7 @@ export interface InventoryItem {
   rack: string;
   bin: string;
   quantity: number;
+  minimumQuantity: number;
   createdAt: string;
   updatedAt: string;
   updatedBy: string;
