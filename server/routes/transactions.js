@@ -1,6 +1,6 @@
 import express from 'express';
 import { readJSON, writeJSON, DB_PATHS } from '../config/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
@@ -66,6 +66,14 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     transaction
   });
+}));
+
+// Delete all transactions (admin only)
+router.delete('/', authenticateToken, requireRole(['admin']), asyncHandler(async (req, res) => {
+  if (!writeJSON(DB_PATHS.TRANSACTIONS, [])) {
+    return res.status(500).json({ success: false, message: 'Failed to delete transaction history' });
+  }
+  res.json({ success: true, message: 'All transaction history deleted' });
 }));
 
 export default router;

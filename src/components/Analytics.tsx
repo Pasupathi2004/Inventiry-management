@@ -3,7 +3,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { TrendingUp, Package, Users, Activity, Calendar, User, FileSpreadsheet } from 'lucide-react';
 import { Analytics as AnalyticsType } from '../types';
-import { format } from 'date-fns';
+import { format, addMonths, subMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 
@@ -38,6 +38,87 @@ const Analytics: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteHistory = async () => {
+    if (!window.confirm('Are you sure you want to delete all transaction history? This cannot be undone.')) return;
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSuccessMessage('All transaction history deleted!');
+        fetchAnalytics();
+      } else {
+        setSuccessMessage(data.message || 'Failed to delete history.');
+      }
+    } catch (error) {
+      setSuccessMessage('Network error while deleting history.');
+    }
+  };
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMonth(Number(e.target.value));
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedYear(Number(e.target.value));
+  };
+
+  const generateMonthlyExcelReport = () => {
+    if (!analytics) return;
+    const month = selectedMonth;
+    const year = selectedYear;
+    const filteredTransactions = analytics.recentTransactions.filter(t => {
+      const d = new Date(t.timestamp);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+    const workbook = XLSX.utils.book_new();
+    const timestamp = `${year}-${String(month+1).padStart(2,'0')}`;
+    // Summary Sheet
+    const summaryData = [
+      [`Inventory Management System - Analytics Report (${timestamp})`],
+      ['Generated At:', format(new Date(), 'yyyy-MM-dd HH:mm:ss')],
+      [''],
+      ['Metric', 'Value'],
+      ['Total Items', analytics.totalItems.toString()],
+      ['Low Stock Items', analytics.lowStockItems.toString()],
+      ['Total Transactions', filteredTransactions.length.toString()],
+      ['Items Consumed', analytics.itemsConsumed.toString()],
+      ['Items Added', analytics.itemsAdded.toString()],
+      ['Active Users', analytics.activeUsers.toString()]
+    ];
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    // Transactions Sheet
+    if (filteredTransactions.length > 0) {
+      const transactionsData = [
+        ['Transaction ID', 'Item Name', 'Transaction Type', 'Quantity Changed', 'User', 'Date & Time', 'Action']
+      ];
+      filteredTransactions.forEach(transaction => {
+        const action = transaction.type === 'added' ? 'Stock Added' : 
+                      transaction.type === 'taken' ? 'Stock Taken' : 'Stock Updated';
+        transactionsData.push([
+          transaction.id?.toString() ?? '',
+          transaction.itemName ?? '',
+          (transaction.type ?? '').toUpperCase(),
+          transaction.quantity?.toString() ?? '',
+          transaction.user ?? '',
+          transaction.timestamp ? format(new Date(transaction.timestamp), 'yyyy-MM-dd HH:mm:ss') : '',
+          action
+        ]);
+      });
+      const transactionsSheet = XLSX.utils.aoa_to_sheet(transactionsData);
+      XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transactions');
+    }
+    XLSX.writeFile(workbook, `inventory_report_${timestamp}.xlsx`);
+    setSuccessMessage('Monthly Excel report generated successfully!');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const generateExcelReport = () => {
@@ -183,12 +264,42 @@ const Analytics: React.FC = () => {
       
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Analytics & Reports</h1>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleDeleteHistory}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Delete History
+          </button>
+          <button
+            onClick={generateExcelReport}
+            className="flex items-center space-x-2 px-4 py-2 bg-[#2E8B57] text-white rounded-lg hover:bg-[#236B45] transition-colors"
+          >
+            <FileSpreadsheet size={20} />
+            <span>Generate Excel Report</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Month/Year Selectors and Monthly Report Download */}
+      <div className="flex items-center space-x-4 mt-2">
+        <label className="text-sm font-medium">Month:</label>
+        <select value={selectedMonth} onChange={handleMonthChange} className="border rounded px-2 py-1">
+          {Array.from({length:12},(_,i)=>i).map(m => (
+            <option key={m} value={m}>{format(new Date(2000, m, 1), 'MMMM')}</option>
+          ))}
+        </select>
+        <label className="text-sm font-medium">Year:</label>
+        <select value={selectedYear} onChange={handleYearChange} className="border rounded px-2 py-1">
+          {Array.from({length:5},(_,i)=>new Date().getFullYear()-i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
         <button
-          onClick={generateExcelReport}
-          className="flex items-center space-x-2 px-4 py-2 bg-[#2E8B57] text-white rounded-lg hover:bg-[#236B45] transition-colors"
+          onClick={generateMonthlyExcelReport}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          <FileSpreadsheet size={20} />
-          <span>Generate Excel Report</span>
+          Download Monthly Report
         </button>
       </div>
 
