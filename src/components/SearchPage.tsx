@@ -177,9 +177,7 @@ const SearchPage: React.FC = () => {
       alert('Please enter a valid non-negative number.');
       return;
     }
-    if (window.confirm(`Are you sure you want to update the quantity of '${item.name}' to ${newQuantity}?`)) {
-      handleQuantityUpdate(item.id, newQuantity);
-    }
+    handleQuantityUpdate(item.id, newQuantity);
   };
 
   if (isLoading) {
