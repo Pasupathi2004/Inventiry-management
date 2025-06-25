@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Mic, MicOff, Package, MapPin, Plus, Minus } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 const SearchPage: React.FC = () => {
   const { token, user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [searchQuery, setSearchQuery] = useState('');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
@@ -23,6 +25,30 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     filterItems();
   }, [searchQuery, inventory]);
+
+  // Socket.IO event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for inventory updates
+    socket.on('inventoryUpdated', (updatedItem: InventoryItem) => {
+      console.log('🔌 Received inventoryUpdated event in SearchPage:', updatedItem);
+      setInventory(prev => prev.map(item => 
+        item.id === updatedItem.id ? updatedItem : item
+      ));
+    });
+
+    socket.on('lowStockAlert', (data: { item: InventoryItem, message: string }) => {
+      console.log('🔌 Received lowStockAlert event in SearchPage:', data);
+      // You can show a notification here
+      alert(`⚠️ ${data.message}`);
+    });
+
+    return () => {
+      socket.off('inventoryUpdated');
+      socket.off('lowStockAlert');
+    };
+  }, [socket, isConnected]);
 
   const fetchInventory = async () => {
     try {

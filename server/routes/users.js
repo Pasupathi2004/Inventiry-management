@@ -5,6 +5,14 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
+// Helper function to emit Socket.IO events
+const emitUserEvent = (req, event, data) => {
+  const io = req.app.get('io');
+  if (io) {
+    io.emit(event, data);
+  }
+};
+
 // Get all users (admin only)
 router.get('/', authenticateToken, requireRole(['admin']), asyncHandler(async (req, res) => {
   const users = readJSON(DB_PATHS.USERS);
@@ -56,6 +64,9 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
 
   const { password: _, ...userWithoutPassword } = newUser;
   
+  // Emit Socket.IO event
+  emitUserEvent(req, 'userCreated', userWithoutPassword);
+
   res.status(201).json({
     success: true,
     user: userWithoutPassword
@@ -103,6 +114,11 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
     });
   }
 
+  const { password: _, ...userWithoutPassword } = users[userIndex];
+  
+  // Emit Socket.IO event
+  emitUserEvent(req, 'userUpdated', userWithoutPassword);
+
   res.json({
     success: true,
     message: 'Password updated successfully'
@@ -122,21 +138,28 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), asyncHandler(as
   }
 
   const users = readJSON(DB_PATHS.USERS);
-  const filteredUsers = users.filter(u => u.id !== userId);
+  const userToDelete = users.find(u => u.id === userId);
   
-  if (filteredUsers.length === users.length) {
+  if (!userToDelete) {
     return res.status(404).json({
       success: false,
       message: 'User not found'
     });
   }
 
+  const filteredUsers = users.filter(u => u.id !== userId);
+  
   if (!writeJSON(DB_PATHS.USERS, filteredUsers)) {
     return res.status(500).json({
       success: false,
       message: 'Failed to delete user'
     });
   }
+
+  const { password: _, ...userWithoutPassword } = userToDelete;
+  
+  // Emit Socket.IO event
+  emitUserEvent(req, 'userDeleted', { id: userId, user: userWithoutPassword });
 
   res.json({
     success: true,

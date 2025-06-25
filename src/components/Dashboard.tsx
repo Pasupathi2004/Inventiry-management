@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, TrendingUp, Users, AlertTriangle, Plus, Search } from 'lucide-react';
 import { Analytics } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 interface DashboardProps {
   onPageChange: (page: string) => void;
@@ -9,12 +10,36 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   const { user, token } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchAnalytics();
   }, []);
+
+  // Socket.IO event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for transaction updates to refresh analytics
+    socket.on('transactionCreated', (newTransaction: any) => {
+      console.log('🔌 Received transactionCreated event in Dashboard:', newTransaction);
+      // Refresh analytics when new transaction is created
+      fetchAnalytics();
+    });
+
+    socket.on('transactionsCleared', (data: { message: string }) => {
+      console.log('🔌 Received transactionsCleared event in Dashboard:', data);
+      // Refresh analytics when transactions are cleared
+      fetchAnalytics();
+    });
+
+    return () => {
+      socket.off('transactionCreated');
+      socket.off('transactionsCleared');
+    };
+  }, [socket, isConnected]);
 
   const fetchAnalytics = async () => {
     try {

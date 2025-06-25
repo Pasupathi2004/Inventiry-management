@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Package, Edit, Trash2, MapPin, Calendar, User, Download, Building, Archive } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { format } from 'date-fns';
 
 const SparesList: React.FC = () => {
   const { user, token } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -24,6 +26,48 @@ const SparesList: React.FC = () => {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  // Socket.IO event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for inventory updates
+    socket.on('inventoryCreated', (newItem: InventoryItem) => {
+      console.log('🔌 Received inventoryCreated event:', newItem);
+      setInventory(prev => [...prev, newItem]);
+    });
+
+    socket.on('inventoryUpdated', (updatedItem: InventoryItem) => {
+      console.log('🔌 Received inventoryUpdated event:', updatedItem);
+      setInventory(prev => prev.map(item => 
+        item.id === updatedItem.id ? updatedItem : item
+      ));
+    });
+
+    socket.on('inventoryDeleted', (data: { id: number, item: InventoryItem }) => {
+      console.log('🔌 Received inventoryDeleted event:', data);
+      setInventory(prev => prev.filter(item => item.id !== data.id));
+    });
+
+    socket.on('bulkUploadCompleted', (data: { count: number, items: InventoryItem[] }) => {
+      console.log('🔌 Received bulkUploadCompleted event:', data);
+      setInventory(prev => [...prev, ...data.items]);
+    });
+
+    socket.on('lowStockAlert', (data: { item: InventoryItem, message: string }) => {
+      console.log('🔌 Received lowStockAlert event:', data);
+      // You can show a notification here
+      alert(`⚠️ ${data.message}`);
+    });
+
+    return () => {
+      socket.off('inventoryCreated');
+      socket.off('inventoryUpdated');
+      socket.off('inventoryDeleted');
+      socket.off('bulkUploadCompleted');
+      socket.off('lowStockAlert');
+    };
+  }, [socket, isConnected]);
 
   const fetchInventory = async () => {
     try {

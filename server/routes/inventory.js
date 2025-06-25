@@ -9,6 +9,24 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Helper function to emit Socket.IO events
+const emitInventoryEvent = (req, event, data) => {
+  const io = req.app.get('io');
+  if (io) {
+    io.emit(event, data);
+    
+    // Emit low stock alert if quantity is below minimum
+    if (event === 'inventoryUpdated' && data.quantity !== undefined && data.minimumQuantity !== undefined) {
+      if (data.quantity <= data.minimumQuantity) {
+        io.emit('lowStockAlert', {
+          item: data,
+          message: `Low stock alert: ${data.name} quantity (${data.quantity}) is at or below minimum (${data.minimumQuantity})`
+        });
+      }
+    }
+  }
+};
+
 // Get all inventory items
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   const inventory = readJSON(DB_PATHS.INVENTORY);
@@ -21,7 +39,7 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
 
 // Create inventory item (admin only)
 router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (req, res) => {
-  const { name, make, model, specification, rack, bin, quantity } = req.body;
+  const { name, make, model, specification, rack, bin, quantity, minimumQuantity } = req.body;
 
   if (!name || !make || !model || !specification || !rack || !bin || quantity === undefined) {
     return res.status(400).json({
@@ -49,6 +67,7 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
     rack,
     bin,
     quantity: parseInt(quantity),
+    minimumQuantity: minimumQuantity ? parseInt(minimumQuantity) : 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     updatedBy: req.user.username
@@ -76,6 +95,10 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
   
   transactions.push(transaction);
   writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+
+  // Emit Socket.IO events
+  emitInventoryEvent(req, 'inventoryCreated', newItem);
+  emitInventoryEvent(req, 'transactionCreated', transaction);
 
   res.status(201).json({
     success: true,
@@ -123,9 +146,10 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Add transaction if quantity changed
+  let transaction = null;
   if (updates.quantity !== undefined && updates.quantity !== oldQuantity) {
     const transactions = readJSON(DB_PATHS.TRANSACTIONS);
-    const transaction = {
+    transaction = {
       id: Math.max(...transactions.map(t => t.id), 0) + 1,
       itemId: itemId,
       itemName: inventory[itemIndex].name,
@@ -137,6 +161,12 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
     
     transactions.push(transaction);
     writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+  }
+
+  // Emit Socket.IO events
+  emitInventoryEvent(req, 'inventoryUpdated', inventory[itemIndex]);
+  if (transaction) {
+    emitInventoryEvent(req, 'transactionCreated', transaction);
   }
 
   res.json({
@@ -185,6 +215,13 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), asyncHandler(as
   transactions.push(transaction);
   writeJSON(DB_PATHS.TRANSACTIONS, transactions);
 
+  // Emit Socket.IO events
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('inventoryDeleted', { id: itemId, item: deletedItem });
+    io.emit('transactionCreated', transaction);
+  }
+
   res.json({
     success: true,
     message: 'Item deleted successfully'
@@ -211,6 +248,8 @@ router.post('/bulk-upload', authenticateToken, requireRole(['admin']), upload.si
   const inventory = readJSON(DB_PATHS.INVENTORY);
   const transactions = readJSON(DB_PATHS.TRANSACTIONS);
   let addedCount = 0;
+  const addedItems = [];
+  
   for (const row of rows) {
     const { Name, Make, Model, Specification, Rack, Bin, Quantity, MinimumQuantity } = row;
     if (!Name || !Make || !Model || !Specification || !Rack || !Bin || Quantity === undefined || MinimumQuantity === undefined) {
@@ -234,6 +273,8 @@ router.post('/bulk-upload', authenticateToken, requireRole(['admin']), upload.si
       continue;
     }
     inventory.push(newItem);
+    addedItems.push(newItem);
+    
     // Add transaction
     const transaction = {
       id: Math.max(...transactions.map(t => t.id), 0) + 1 + addedCount,
@@ -247,10 +288,21 @@ router.post('/bulk-upload', authenticateToken, requireRole(['admin']), upload.si
     transactions.push(transaction);
     addedCount++;
   }
+  
   if (addedCount > 0) {
     writeJSON(DB_PATHS.INVENTORY, inventory);
     writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+    
+    // Emit Socket.IO events for bulk upload
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('bulkUploadCompleted', {
+        count: addedCount,
+        items: addedItems
+      });
+    }
   }
+  
   res.json({ success: true, message: `Bulk upload complete. ${addedCount} items added.` });
 }));
 

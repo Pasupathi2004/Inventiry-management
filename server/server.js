@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { initializeDatabase } from './config/database.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -15,6 +17,21 @@ import analyticsRoutes from './routes/analytics.js';
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'https://inventiry-management.vercel.app',
+      process.env.CORS_ORIGIN
+    ].filter(Boolean),
+    credentials: true
+  }
+});
+
+// Make io available to routes
+app.set('io', io);
+
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -59,6 +76,27 @@ app.post('/api/login', (req, res, next) => {
   authRoutes(req, res, next);
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`🔌 Client connected: ${socket.id}`);
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Client disconnected: ${socket.id}`);
+  });
+
+  // Join room for real-time updates
+  socket.on('join', (room) => {
+    socket.join(room);
+    console.log(`👥 Client ${socket.id} joined room: ${room}`);
+  });
+
+  // Leave room
+  socket.on('leave', (room) => {
+    socket.leave(room);
+    console.log(`👥 Client ${socket.id} left room: ${room}`);
+  });
+});
+
 // 404 handler
 app.use(notFound);
 
@@ -73,11 +111,12 @@ const startServer = async () => {
     console.log('Database initialized successfully');
 
     // Start server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Set' : 'Not Set'}`);
       console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN}`);
+      console.log(`🔌 Socket.IO enabled`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

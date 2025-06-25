@@ -5,6 +5,14 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
+// Helper function to emit Socket.IO events
+const emitTransactionEvent = (req, event, data) => {
+  const io = req.app.get('io');
+  if (io) {
+    io.emit(event, data);
+  }
+};
+
 // Get all transactions
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   const transactions = readJSON(DB_PATHS.TRANSACTIONS);
@@ -62,6 +70,9 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     });
   }
 
+  // Emit Socket.IO event
+  emitTransactionEvent(req, 'transactionCreated', transaction);
+
   res.status(201).json({
     success: true,
     transaction
@@ -73,6 +84,10 @@ router.delete('/', authenticateToken, requireRole(['admin']), asyncHandler(async
   if (!writeJSON(DB_PATHS.TRANSACTIONS, [])) {
     return res.status(500).json({ success: false, message: 'Failed to delete transaction history' });
   }
+  
+  // Emit Socket.IO event
+  emitTransactionEvent(req, 'transactionsCleared', { message: 'All transaction history cleared' });
+  
   res.json({ success: true, message: 'All transaction history deleted' });
 }));
 

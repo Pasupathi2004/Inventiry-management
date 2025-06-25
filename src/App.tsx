@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -53,9 +54,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <SocketProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </SocketProvider>
   );
 }
 

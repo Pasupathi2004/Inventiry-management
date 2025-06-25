@@ -5,12 +5,14 @@ import { TrendingUp, Package, Users, Activity, Calendar, User, FileSpreadsheet }
 import { Analytics as AnalyticsType } from '../types';
 import { format, addMonths, subMonths } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import * as XLSX from 'xlsx';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 const Analytics: React.FC = () => {
   const { token } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [analytics, setAnalytics] = useState<AnalyticsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -25,6 +27,31 @@ const Analytics: React.FC = () => {
     fetchUserCount();
     fetchStorageMB();
   }, []);
+
+  // Socket.IO event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for transaction updates
+    socket.on('transactionCreated', (newTransaction: any) => {
+      console.log('🔌 Received transactionCreated event:', newTransaction);
+      // Refresh analytics when new transaction is created
+      fetchAnalytics();
+    });
+
+    socket.on('transactionsCleared', (data: { message: string }) => {
+      console.log('🔌 Received transactionsCleared event:', data);
+      // Refresh analytics when transactions are cleared
+      fetchAnalytics();
+      setSuccessMessage('Transaction history cleared in real-time!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    });
+
+    return () => {
+      socket.off('transactionCreated');
+      socket.off('transactionsCleared');
+    };
+  }, [socket, isConnected]);
 
   const fetchAnalytics = async () => {
     try {

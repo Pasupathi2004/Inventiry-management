@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Users, Plus, Edit, Trash2, Shield, User as UserIcon } from 'lucide-react';
 import { User } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 const UserManagement: React.FC = () => {
   const { user: currentUser, token } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -20,6 +22,35 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Socket.IO event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for user updates
+    socket.on('userCreated', (newUser: User) => {
+      console.log('🔌 Received userCreated event:', newUser);
+      setUsers(prev => [...prev, newUser]);
+    });
+
+    socket.on('userUpdated', (updatedUser: User) => {
+      console.log('🔌 Received userUpdated event:', updatedUser);
+      setUsers(prev => prev.map(user => 
+        user.id === updatedUser.id ? updatedUser : user
+      ));
+    });
+
+    socket.on('userDeleted', (data: { id: number, user: User }) => {
+      console.log('🔌 Received userDeleted event:', data);
+      setUsers(prev => prev.filter(user => user.id !== data.id));
+    });
+
+    return () => {
+      socket.off('userCreated');
+      socket.off('userUpdated');
+      socket.off('userDeleted');
+    };
+  }, [socket, isConnected]);
 
   const fetchUsers = async () => {
     try {

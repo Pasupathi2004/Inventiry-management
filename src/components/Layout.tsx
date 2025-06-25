@@ -9,9 +9,12 @@ import {
   Users, 
   LogOut, 
   Bell,
-  Home
+  Home,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +24,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
   const { user, logout, token } = useAuth();
+  const { isConnected } = useSocket();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -81,6 +85,18 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Socket.IO Connection Status */}
+              <div className="flex items-center space-x-2">
+                {isConnected ? (
+                  <Wifi size={16} className="text-green-300" title="Real-time updates connected" />
+                ) : (
+                  <WifiOff size={16} className="text-red-300" title="Real-time updates disconnected" />
+                )}
+                <span className="text-xs text-gray-300 hidden sm:inline">
+                  {isConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+
               {/* Notifications */}
               <div className="relative">
                 <button
