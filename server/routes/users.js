@@ -1,5 +1,5 @@
 import express from 'express';
-import { readJSON, writeJSON, DB_PATHS } from '../config/database.js';
+import { readJSON, safeWriteJSON, DB_PATHS } from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -55,7 +55,7 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
 
   users.push(newUser);
   
-  if (!writeJSON(DB_PATHS.USERS, users)) {
+  if (!(await safeWriteJSON(DB_PATHS.USERS, users))) {
     return res.status(500).json({
       success: false,
       message: 'Failed to create user'

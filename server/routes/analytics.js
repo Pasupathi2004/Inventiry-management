@@ -1,5 +1,5 @@
 import express from 'express';
-import { readJSON, DB_PATHS } from '../config/database.js';
+import { readJSON, checkDataIntegrity, DB_PATHS } from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import fs from 'fs';
@@ -42,6 +42,16 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
     analytics
   });
 }));
+
+// Get data integrity status (admin only)
+router.get('/integrity', authenticateToken, requireRole(['admin']), (req, res) => {
+  try {
+    const integrity = checkDataIntegrity();
+    res.json({ success: true, integrity });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to check data integrity' });
+  }
+});
 
 // Get storage usage in MB (admin only)
 router.get('/settings/storage', authenticateToken, requireRole(['admin']), (req, res) => {

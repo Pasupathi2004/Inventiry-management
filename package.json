@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "server": "node server/server.js",
     "server:dev": "nodemon server/server.js",
-    "vercel-build": "vite build"
+    "vercel-build": "vite build",
+    "recover-data": "node server/scripts/dataRecovery.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

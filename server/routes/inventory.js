@@ -1,5 +1,5 @@
 import express from 'express';
-import { readJSON, writeJSON, DB_PATHS } from '../config/database.js';
+import { readJSON, safeWriteJSON, DB_PATHS } from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import multer from 'multer';
@@ -75,7 +75,7 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
 
   inventory.push(newItem);
   
-  if (!writeJSON(DB_PATHS.INVENTORY, inventory)) {
+  if (!(await safeWriteJSON(DB_PATHS.INVENTORY, inventory))) {
     return res.status(500).json({
       success: false,
       message: 'Failed to create inventory item'
@@ -94,7 +94,7 @@ router.post('/', authenticateToken, requireRole(['admin']), asyncHandler(async (
   };
   
   transactions.push(transaction);
-  writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+  await safeWriteJSON(DB_PATHS.TRANSACTIONS, transactions);
 
   // Emit Socket.IO events
   emitInventoryEvent(req, 'inventoryCreated', newItem);
@@ -138,7 +138,7 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
     updatedBy: req.user.username
   };
 
-  if (!writeJSON(DB_PATHS.INVENTORY, inventory)) {
+  if (!(await safeWriteJSON(DB_PATHS.INVENTORY, inventory))) {
     return res.status(500).json({
       success: false,
       message: 'Failed to update inventory item'
@@ -160,7 +160,7 @@ router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
     };
     
     transactions.push(transaction);
-    writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+    await safeWriteJSON(DB_PATHS.TRANSACTIONS, transactions);
   }
 
   // Emit Socket.IO events
@@ -290,8 +290,15 @@ router.post('/bulk-upload', authenticateToken, requireRole(['admin']), upload.si
   }
   
   if (addedCount > 0) {
-    writeJSON(DB_PATHS.INVENTORY, inventory);
-    writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+    const inventoryWriteSuccess = await safeWriteJSON(DB_PATHS.INVENTORY, inventory);
+    const transactionsWriteSuccess = await safeWriteJSON(DB_PATHS.TRANSACTIONS, transactions);
+    
+    if (!inventoryWriteSuccess || !transactionsWriteSuccess) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to save bulk upload data. Please try again.' 
+      });
+    }
     
     // Emit Socket.IO events for bulk upload
     const io = req.app.get('io');

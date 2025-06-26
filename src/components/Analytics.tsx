@@ -21,11 +21,15 @@ const Analytics: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [storageMB, setStorageMB] = useState<number | null>(null);
+  const [integrity, setIntegrity] = useState<any>(null);
+  const [storage, setStorage] = useState<any>(null);
 
   useEffect(() => {
     fetchAnalytics();
     fetchUserCount();
     fetchStorageMB();
+    checkDataIntegrity();
+    checkStorage();
   }, []);
 
   // Socket.IO event listeners for real-time updates
@@ -264,6 +268,40 @@ const Analytics: React.FC = () => {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
+  // Add data integrity check
+  const checkDataIntegrity = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/analytics/integrity`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIntegrity(data.integrity);
+      }
+    } catch (error) {
+      console.error('Failed to check data integrity:', error);
+    }
+  };
+
+  // Add storage check
+  const checkStorage = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/analytics/settings/storage`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStorage(data.storageMB);
+      }
+    } catch (error) {
+      console.error('Failed to check storage:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -499,6 +537,67 @@ const Analytics: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Data Integrity Card */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Integrity</h3>
+        {integrity ? (
+          <div className="space-y-3">
+            {Object.entries(integrity).map(([key, value]: [string, any]) => (
+              <div key={key} className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600 capitalize">
+                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {value.valid ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✓ Valid
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      ✗ Invalid
+                    </span>
+                  )}
+                  <span className="text-sm text-gray-500">
+                    {value.count || 0} records
+                  </span>
+                  {value.hasBackup && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Backup
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">Loading integrity data...</p>
+        )}
+      </div>
+
+      {/* Storage Usage Card */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Storage Usage</h3>
+        {storage !== null ? (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-600">Total Storage</span>
+              <span className="text-lg font-semibold text-gray-900">{storage} MB</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full" 
+                style={{ width: `${Math.min((storage / 10) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500">
+              {storage < 1 ? 'Low storage usage' : storage < 5 ? 'Moderate storage usage' : 'High storage usage'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-gray-500">Loading storage data...</p>
+        )}
+      </div>
     </div>
   );
 };

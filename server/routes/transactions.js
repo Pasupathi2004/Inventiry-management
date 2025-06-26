@@ -1,5 +1,5 @@
 import express from 'express';
-import { readJSON, writeJSON, DB_PATHS } from '../config/database.js';
+import { readJSON, safeWriteJSON, DB_PATHS } from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -63,7 +63,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 
   transactions.push(transaction);
   
-  if (!writeJSON(DB_PATHS.TRANSACTIONS, transactions)) {
+  if (!(await safeWriteJSON(DB_PATHS.TRANSACTIONS, transactions))) {
     return res.status(500).json({
       success: false,
       message: 'Failed to create transaction'
@@ -81,7 +81,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 
 // Delete all transactions (admin only)
 router.delete('/', authenticateToken, requireRole(['admin']), asyncHandler(async (req, res) => {
-  if (!writeJSON(DB_PATHS.TRANSACTIONS, [])) {
+  if (!(await safeWriteJSON(DB_PATHS.TRANSACTIONS, []))) {
     return res.status(500).json({ success: false, message: 'Failed to delete transaction history' });
   }
   
