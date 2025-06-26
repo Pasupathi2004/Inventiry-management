@@ -29,12 +29,11 @@ const SparesList: React.FC = () => {
     fetchInventory();
   }, []);
 
-  // Filter inventory based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredInventory(inventory);
     } else {
-      const filtered = inventory.filter(item => 
+      const filtered = inventory.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,7 +41,7 @@ const SparesList: React.FC = () => {
         item.rack.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.bin.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.quantity.toString().includes(searchTerm) ||
-        item.updatedBy.toLowerCase().includes(searchTerm.toLowerCase())
+        (item.updatedBy && item.updatedBy.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredInventory(filtered);
     }
@@ -235,7 +234,7 @@ const SparesList: React.FC = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar - moved here, right below header */}
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -264,6 +263,7 @@ const SparesList: React.FC = () => {
         )}
       </div>
 
+      {/* Summary/info card comes after search bar */}
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
