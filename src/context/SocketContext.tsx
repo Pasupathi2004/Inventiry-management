@@ -29,7 +29,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const connect = () => {
     if (socket?.connected) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const apiUrl = import.meta.env.VITE_API_URL;
     const newSocket = io(apiUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
