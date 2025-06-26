@@ -193,7 +193,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), asyncHandler(as
   const deletedItem = inventory[itemIndex];
   const filteredInventory = inventory.filter(i => i.id !== itemId);
   
-  if (!writeJSON(DB_PATHS.INVENTORY, filteredInventory)) {
+  if (!(await safeWriteJSON(DB_PATHS.INVENTORY, filteredInventory))) {
     return res.status(500).json({
       success: false,
       message: 'Failed to delete inventory item'
@@ -213,7 +213,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), asyncHandler(as
   };
   
   transactions.push(transaction);
-  writeJSON(DB_PATHS.TRANSACTIONS, transactions);
+  await safeWriteJSON(DB_PATHS.TRANSACTIONS, transactions);
 
   // Emit Socket.IO events
   const io = req.app.get('io');

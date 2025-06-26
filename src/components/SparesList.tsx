@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Edit, Trash2, MapPin, Calendar, User, Download, Building, Archive } from 'lucide-react';
+import { Package, Edit, Trash2, MapPin, Calendar, User, Download, Building, Archive, Search, X } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -9,6 +9,8 @@ const SparesList: React.FC = () => {
   const { user, token } = useAuth();
   const { socket, isConnected } = useSocket();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -26,6 +28,25 @@ const SparesList: React.FC = () => {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  // Filter inventory based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredInventory(inventory);
+    } else {
+      const filtered = inventory.filter(item => 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.specification.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.rack.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.bin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.quantity.toString().includes(searchTerm) ||
+        item.updatedBy.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredInventory(filtered);
+    }
+  }, [searchTerm, inventory]);
 
   // Socket.IO event listeners for real-time updates
   useEffect(() => {
@@ -214,10 +235,44 @@ const SparesList: React.FC = () => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by name, make, model, specification, location, quantity, or user..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-sm text-gray-600">
+            Found {filteredInventory.length} item{filteredInventory.length !== 1 ? 's' : ''} matching "{searchTerm}"
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             Total Items: {inventory.length}
+            {searchTerm && (
+              <span className="text-sm font-normal text-gray-600 ml-2">
+                (Showing {filteredInventory.length} filtered)
+              </span>
+            )}
           </h2>
           <div className="text-sm text-gray-600">
             Last updated: {inventory.length > 0 ? format(new Date(Math.max(...inventory.map(item => new Date(item.updatedAt).getTime()))), 'PPpp') : 'N/A'}
@@ -225,9 +280,9 @@ const SparesList: React.FC = () => {
         </div>
       </div>
 
-      {inventory.length > 0 ? (
+      {filteredInventory.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {inventory.map((item) => {
+          {filteredInventory.map((item) => {
             const stockStatus = getStockStatus(item.quantity);
             return (
               <div key={item.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
@@ -344,8 +399,20 @@ const SparesList: React.FC = () => {
       ) : (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <Package className="mx-auto text-gray-400 mb-4" size={48} />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
-          <p className="text-gray-600">Start by adding some items to your inventory.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm ? 'No items found matching your search' : 'No items found'}
+          </h3>
+          <p className="text-gray-600">
+            {searchTerm ? 'Try adjusting your search terms or clear the search to see all items.' : 'Start by adding some items to your inventory.'}
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="mt-4 px-4 py-2 bg-[#2E8B57] text-white rounded-lg hover:bg-[#236B45] transition-colors"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
       )}
 
