@@ -245,7 +245,7 @@ const SparesList: React.FC = () => {
             placeholder="Search by name, make, model, specification, location, quantity, or user..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-12 pr-12 py-4 text-lg border border-gray-300 rounded-xl shadow focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent bg-white"
+            className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent bg-white"
           />
           {searchTerm && (
             <button
