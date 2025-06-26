@@ -234,9 +234,9 @@ const SparesList: React.FC = () => {
         </button>
       </div>
 
-      {/* Search Bar - moved here, right below header */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="relative">
+      {/* Standalone Search Box */}
+      <div className="w-full flex justify-center">
+        <div className="relative w-full max-w-xl">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
@@ -245,7 +245,7 @@ const SparesList: React.FC = () => {
             placeholder="Search by name, make, model, specification, location, quantity, or user..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent"
+            className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent bg-white"
           />
           {searchTerm && (
             <button
@@ -256,12 +256,12 @@ const SparesList: React.FC = () => {
             </button>
           )}
         </div>
-        {searchTerm && (
-          <div className="mt-2 text-sm text-gray-600">
-            Found {filteredInventory.length} item{filteredInventory.length !== 1 ? 's' : ''} matching "{searchTerm}"
-          </div>
-        )}
       </div>
+      {searchTerm && (
+        <div className="text-center text-sm text-gray-600">
+          Found {filteredInventory.length} item{filteredInventory.length !== 1 ? 's' : ''} matching "{searchTerm}"
+        </div>
+      )}
 
       {/* Summary/info card comes after search bar */}
       <div className="bg-white rounded-lg shadow-md p-4">
